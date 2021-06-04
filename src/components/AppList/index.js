@@ -2,6 +2,8 @@ import React, { Component } from 'react'
 
 import { View, Alert, Image, StyleSheet, Platform} from 'react-native'
 
+import NetInfo from "@react-native-community/netinfo";
+
 import { AsyncStorage } from 'react-native'
 
 import { connect } from 'react-redux'
@@ -36,7 +38,67 @@ const mapStateToProps = (state) => ({
 
 const ConnectedAppList = connect(mapStateToProps)(AppList)
 
+let unsubscribe = null
+
+let wifi = "The Internet is connected by WIFI!"
+let cellular = "The Internet is connected by Cellular!"
+let none = "Internet is no connected!"
+
 export default class AppListWrapper extends Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      netType: "",
+      isConnected: "",
+    };
+  }
+  
+  componentDidMount() {
+    // Subscribe
+    NetInfo.configure({
+      reachabilityLongTimeout: 60 * 10, // 60s
+      reachabilityShortTimeout: 5 * 10, // 5s
+      reachabilityRequestTimeout: 15 * 10, // 15s
+    });
+
+    unsubscribe = NetInfo.addEventListener(state => {
+      let content = ""
+      let type = state.type;
+      
+      if(type == "wifi"){
+        content = wifi
+      }else if(type == "cellular"){
+        content = cellular
+      }else{
+        content = none
+      }
+
+      this.setState({
+        netType: state.type,
+        isConnected: state.isConnected?'Yes':'No'
+      })
+
+      Alert.alert(
+        'Internet Status',
+        `${content}`,
+        [{ text: 'OK', onPress: () => {} }]
+      )
+    });
+
+    NetInfo.fetch().then(state => {
+      this.setState({
+        netType: state.type,
+        isConnected: state.isConnected?'Yes':'No'
+      })
+    });
+  }
+
+  componentWillUnmount() {
+    // Unsubscribe
+    if (unsubscribe != null) unsubscribe()
+  }
+
   menuButtonCB = () => {
     let { navigation } = this.props
     ActionSheet.showActionSheetWithOptions(
@@ -55,10 +117,24 @@ export default class AppListWrapper extends Component {
       }
     )
   }
+
+  // cellular
   handleTestInternet = () => {
+
+    let content = ""
+    let type = this.state.netType;
+    
+    if(type == "wifi"){
+      content = wifi
+    }else if(type == "cellular"){
+      content = cellular
+    }else{
+      content = none
+    }
+
     Alert.alert(
       'Internet Status',
-      'Internet is no connected, please connect again',
+      `${content}`,
       [{ text: 'OK', onPress: () => {} }]
     )
   }
@@ -72,7 +148,7 @@ export default class AppListWrapper extends Component {
             title="Internet Test"
             onPress={this.handleTestInternet}
           >
-            Internet Test
+            Internet Status View
           </Button>
         </View>
       </View>
