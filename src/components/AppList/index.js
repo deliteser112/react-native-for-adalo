@@ -17,7 +17,10 @@ import {
 import ListWrapper from './ListWrapper'
 import MenuButton from './MenuButton'
 import AppBar from './AppBar'
+import Modal from '../Viewer/Modal'
 import ActionSheet from 'react-native-action-sheet'
+import DropDownPicker from 'react-native-dropdown-picker';
+import ModalDropdown from 'react-native-modal-dropdown';
 
 class AppList extends Component {
   render() {
@@ -44,6 +47,10 @@ let wifi = "The Internet is connected by WIFI!"
 let cellular = "The Internet is connected by Cellular!"
 let none = "Internet is no connected!"
 
+let noMessage = "The message content is not selected yet."
+
+let messages = ['There is no Internet', 'The internet is not working', 'The internet connection is failed']
+
 export default class AppListWrapper extends Component {
 
   constructor(props) {
@@ -51,7 +58,11 @@ export default class AppListWrapper extends Component {
     this.state = {
       netType: "",
       isConnected: "",
+      selectedIndex: '', 
+      dropDown:{},
+      noInternetMessage:""
     };
+    this._dropdown_select = this._dropdown_select.bind(this)
   }
   
   componentDidMount() {
@@ -71,7 +82,11 @@ export default class AppListWrapper extends Component {
       }else if(type == "cellular"){
         content = cellular
       }else{
-        content = none
+        if(this.state.noInternetMessage==""){
+          content = noMessage
+        }else{
+          content = this.state.noInternetMessage
+        }
       }
 
       this.setState({
@@ -129,8 +144,13 @@ export default class AppListWrapper extends Component {
     }else if(type == "cellular"){
       content = cellular
     }else{
-      content = none
+      if(this.state.noInternetMessage==""){
+        content = noMessage
+      }else{
+        content = this.state.noInternetMessage
+      }
     }
+
 
     Alert.alert(
       'Internet Status',
@@ -138,11 +158,25 @@ export default class AppListWrapper extends Component {
       [{ text: 'OK', onPress: () => {} }]
     )
   }
+
+  _dropdown_select(value){
+    this.setState({
+      noInternetMessage: messages[value]
+    })
+  }
+
+  handleChooseMessage = () => {
+    console.log("hello")
+  }
   render() {
+    const { open, value, items } = this.state;
     return (
       <View style={styles.wrapper}>
         <AppBar {...this.props} menuButtonCB={this.menuButtonCB} />
         <ConnectedAppList {...this.props} />
+        <View style={styles.dropdownStyles}>
+          <ModalDropdown onSelect={(value)=>{this._dropdown_select(value)}} defaultIndex={this.state.selectedIndex} dropdownStyle={{width: '100%'}} options={messages}/>
+        </View>
         <View style={styles.positionButton}>
           <Button
             title="Internet Test"
@@ -169,6 +203,17 @@ const styles = StyleSheet.create({
     },
     borderBottomWidth: 0,
     height: Platform.OS === 'ios' ? 56 : undefined,
+  },
+  dropdownStyles:{
+    marginBottom:150,
+    borderWidth: 1,
+    paddingVertical: 15,
+    color:'red',
+    // paddingLeft:10,
+    // paddingRight:10,
+    borderColor: '#00A797',
+    fontSize:20,
+    borderRadius: 5,
   },
   positionButton:{
     marginBottom:100,
